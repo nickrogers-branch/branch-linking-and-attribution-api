@@ -43,6 +43,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0F2DC44729B946F200222F6F /* Snowman.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Snowman.entitlements; sourceTree = "<group>"; };
 		FEBD115329B66E300088E407 /* Snowman.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Snowman.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FEBD115629B66E300088E407 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FEBD115829B66E300088E407 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -113,6 +114,7 @@
 		FEBD115529B66E300088E407 /* Snowman */ = {
 			isa = PBXGroup;
 			children = (
+				0F2DC44729B946F200222F6F /* Snowman.entitlements */,
 				FEBD119929B66F680088E407 /* App */,
 				FEBD118829B66EE50088E407 /* Controller */,
 				FEBD118729B66EE10088E407 /* View */,
@@ -503,6 +505,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Snowman/Snowman.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = R63EM248DP;
@@ -531,6 +534,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Snowman/Snowman.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = R63EM248DP;
