@@ -36,6 +36,7 @@ class BranchHandler {
     
     // MARK: Lifecycle methods
     
+    /// Handle data from the AppDelegate's continueUserActivity() lifecycle method. This is used to handle an incoming web URL that represents an Associated Domain for Universal Linking.
     func continueUserActivity(_ userActivity: NSUserActivity) {
         // Handle the lifecycle method "continueUserActivity"
         // Extract the web URL from the NSUserActivity object
@@ -48,6 +49,7 @@ class BranchHandler {
         }
     }
     
+    /// Handle data from the AppDelegate's openURL() lifecycle method. This is used to handle incoming data from a URI scheme that triggered the app open.
     func openURL(_ url: URL) {
         // Check if the URL contains "link_click_id" query parameter on it. Note: The URL may be in a scheme format (e.g., "myapp://link?link_click_id=abc123", we want "abc123").
         
@@ -72,6 +74,7 @@ class BranchHandler {
         }
     }
     
+    /// Handle the app entering the background.
     func didEnterBackground() {
         // Reset the limiter for opens so that if the app is launched from a link, we'll make a new call to retrieve deep link data
         openCallTriggered = false
@@ -79,6 +82,7 @@ class BranchHandler {
     
     // MARK: Branch API calls
     
+    /// Make a request to Branch's v1/open endpoint if it's appropriate to do so.
     private func initiateBranchOpenRequest() {
         // If we've already hit the open endpoint, don't do it again.
         if openCallTriggered {
