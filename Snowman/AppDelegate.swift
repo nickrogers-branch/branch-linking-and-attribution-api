@@ -9,7 +9,7 @@ import UIKit
 import WebKit
 
 class BranchHandler {
-    /// The handler where deep link data is retutned after successful Branch initialization.
+    /// The handler where deep link data is returned after successful Branch initialization.
     var handler: (([AnyHashable: AnyObject]) -> Void)?
     /// Deep link data returned from the Branch API
     var latestReferringParams: [AnyHashable: AnyObject]?
@@ -28,7 +28,7 @@ class BranchHandler {
         // When first initializing, ensure the boolean used for deciding if we need to make an open call is reset
         self.openCallTriggered = false
         
-        // If no Universal Link or URI scheme has been triggered, ensure the v1/open request does get called.
+        // Schedule a delayed initiation of the v1/open request to allow app launch to complete.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.initiateBranchOpenRequest()
         }
@@ -36,11 +36,10 @@ class BranchHandler {
     
     // MARK: Lifecycle methods
     
-    /// Handle data from the AppDelegate's continueUserActivity() lifecycle method. This is used to handle an incoming web URL that represents an Associated Domain for Universal Linking.
+    /// Handle data from the AppDelegate's continueUserActivity() lifecycle method.
+    /// This is used to handle an incoming web URL that represents an Associated Domain for Universal Linking.
     func continueUserActivity(_ userActivity: NSUserActivity) {
-        // Handle the lifecycle method "continueUserActivity"
         // Extract the web URL from the NSUserActivity object
-        
         if let webURL = userActivity.webpageURL {
             self.universalLink = webURL.absoluteString
             
@@ -49,10 +48,9 @@ class BranchHandler {
         }
     }
     
-    /// Handle data from the AppDelegate's openURL() lifecycle method. This is used to handle incoming data from a URI scheme that triggered the app open.
+    /// Handle data from the AppDelegate's openURL() lifecycle method.
+    /// This is used to handle incoming data from a URI scheme that triggered the app open.
     func openURL(_ url: URL) {
-        // Check if the URL contains "link_click_id" query parameter on it. Note: The URL may be in a scheme format (e.g., "myapp://link?link_click_id=abc123", we want "abc123").
-        
         // Parse the URL's query items
         if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
            let queryItems = components.queryItems {
@@ -64,7 +62,7 @@ class BranchHandler {
                 // Save the link click ID for future use.
                 self.linkClickID = linkClickID
                 
-                // We have a session opened from a URI scheme, so initiate the v1/open request
+                // Initiate the v1/open request since the app opened from a URI scheme
                 initiateBranchOpenRequest()
             } else {
                 print("link_click_id not found in the URL.")
@@ -91,22 +89,26 @@ class BranchHandler {
             openCallTriggered = true
         }
         
+        // Retrieve the User Agent string asynchronously
         self.getUserAgent { userAgentString in
             DispatchQueue.global(qos: .userInteractive).async {
+                // Fetch the app version from the app's Info.plist
                 var version: String?
                 if let infoDictionary = Bundle.main.infoDictionary {
                     version = infoDictionary["CFBundleShortVersionString"] as? String
                 }
                 
+                // Retrieve the operating system version
                 let osVersion = ProcessInfo.processInfo.operatingSystemVersion
                 
+                // Build the request body for the v1/open API call
                 var requestBody: [String: Any] = [:]
                 requestBody["server_to_server"] = true
                 requestBody["os"] = "iOS"
                 requestBody["is_hardware_id_real"] = true
                 requestBody["ad_tracking_enabled"] = false
-                    requestBody["branch_key"] = "YOUR BRANCH KEY HERE"
-                    requestBody["branch_secret"] = "YOUR BRANCH SECRET HERE"
+                requestBody["branch_key"] = "YOUR BRANCH KEY HERE"
+                requestBody["branch_secret"] = "YOUR BRANCH SECRET HERE"
                 
                 if version != nil {
                     requestBody["app_version"] = version
@@ -115,19 +117,21 @@ class BranchHandler {
                 requestBody["user_agent"] = userAgentString
                 requestBody["os_version"] = "\(osVersion.majorVersion).\(osVersion.minorVersion).\(osVersion.patchVersion)"
                 
+                // Include the hardware ID (Identifier for Vendor)
                 if let idfv = UIDevice.current.identifierForVendor {
                     requestBody["hardware_id"] = idfv.uuidString
                     requestBody["hardware_id_type"] = "vendor_id"
                     requestBody["ios_vendor_id"] = idfv.uuidString
                 }
                 
+                // Include the Universal Link or Link Click ID
                 if let universalLink = self.universalLink {
                     requestBody["universal_link_url"] = universalLink
                 } else if let linkClickID = self.linkClickID {
                     requestBody["link_identifier"] = linkClickID
                 }
                 
-                // Make the POST request
+                // Prepare the POST request to the v1/open endpoint
                 guard let url = URL(string: "https://api2.branch.io/v1/open") else {
                     print("Invalid URL")
                     return
@@ -138,34 +142,35 @@ class BranchHandler {
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 
                 do {
+                    // Serialize the request body into JSON format
                     request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
                 } catch {
                     print("Failed to serialize JSON: \(error)")
                     return
                 }
                 
+                // Perform the API call using URLSession
                 let task = URLSession.shared.dataTask(with: request) { data, response, error in
                     if let error = error {
                         print("Error making POST request: \(error)")
                         return
                     }
                     
+                    // Check for a successful HTTP status code
                     guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
                         print("Server error: \(response.debugDescription)")
                         return
                     }
                     
                     if let data = data {
-                        // Move to main thread for calling handler
+                        // Parse the JSON response and call the handler
                         DispatchQueue.main.async {
                             do {
-                                // Parse the JSON response
                                 if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [AnyHashable: AnyObject] {
                                     print("Response JSON: \(jsonResponse)")
-
-                                    // Assign the parsed dictionary to latestReferringParams
                                     self.latestReferringParams = jsonResponse
                                     
+                                    // Call the handler with the parsed data
                                     if self.handler != nil {
                                         self.handler!(jsonResponse)
                                     }
@@ -181,14 +186,14 @@ class BranchHandler {
                 
                 task.resume()
                 
-                // Clear the link click ID and/or the Universal Link to prevent a race condition since they've already been used.
+                // Clear the link click ID and Universal Link to avoid race conditions
                 self.linkClickID = nil
                 self.universalLink = nil
             }
         }
     }
 
-    /// Get the user agent string for this device.
+    /// Get the user agent string for this device using a WKWebView.
     private func getUserAgent(completion: @escaping (String?) -> Void) {
         DispatchQueue.main.async {
             let webView = WKWebView()
@@ -203,6 +208,7 @@ class BranchHandler {
         }
     }
 }
+
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
